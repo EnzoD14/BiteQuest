@@ -1,0 +1,254 @@
+[
+  {
+    "name": "Medialuna de manteca",
+    "category": "desayuno",
+    "portion": "1 unidad (55g)",
+    "calories": 180,
+    "protein_g": 4,
+    "carbs_g": 22,
+    "fat_g": 9
+  },
+  {
+    "name": "Tostadas con manteca",
+    "category": "desayuno",
+    "portion": "2 tostadas (60g)",
+    "calories": 210,
+    "protein_g": 6,
+    "carbs_g": 28,
+    "fat_g": 9
+  },
+  {
+    "name": "Pan con dulce de leche",
+    "category": "desayuno",
+    "portion": "1 rebanada (50g)",
+    "calories": 240,
+    "protein_g": 6,
+    "carbs_g": 38,
+    "fat_g": 8
+  },
+  {
+    "name": "Café con leche",
+    "category": "desayuno",
+    "portion": "1 taza",
+    "calories": 80,
+    "protein_g": 4,
+    "carbs_g": 10,
+    "fat_g": 3
+  },
+  {
+    "name": "Yogur entero",
+    "category": "desayuno",
+    "portion": "1 pote (190g)",
+    "calories": 140,
+    "protein_g": 7,
+    "carbs_g": 18,
+    "fat_g": 4
+  },
+  {
+    "name": "Huevos revueltos",
+    "category": "desayuno",
+    "portion": "2 huevos",
+    "calories": 180,
+    "protein_g": 14,
+    "carbs_g": 2,
+    "fat_g": 14
+  },
+  {
+    "name": "Sándwich de jamón y queso",
+    "category": "merienda",
+    "portion": "1 unidad",
+    "calories": 320,
+    "protein_g": 15,
+    "carbs_g": 30,
+    "fat_g": 15
+  },
+  {
+    "name": "Bizcochos de grasa",
+    "category": "merienda",
+    "portion": "3 unidades (60g)",
+    "calories": 250,
+    "protein_g": 5,
+    "carbs_g": 32,
+    "fat_g": 12
+  },
+  {
+    "name": "Tostado jamón y queso",
+    "category": "merienda",
+    "portion": "1 unidad",
+    "calories": 350,
+    "protein_g": 18,
+    "carbs_g": 28,
+    "fat_g": 18
+  },
+  {
+    "name": "Batido de banana con leche",
+    "category": "merienda",
+    "portion": "1 vaso",
+    "calories": 220,
+    "protein_g": 8,
+    "carbs_g": 35,
+    "fat_g": 6
+  },
+  {
+    "name": "Milanesa de carne",
+    "category": "almuerzo",
+    "portion": "150g",
+    "calories": 450,
+    "protein_g": 30,
+    "carbs_g": 25,
+    "fat_g": 28
+  },
+  {
+    "name": "Milanesa con papas fritas",
+    "category": "almuerzo",
+    "portion": "1 plato",
+    "calories": 850,
+    "protein_g": 35,
+    "carbs_g": 70,
+    "fat_g": 45
+  },
+  {
+    "name": "Empanada de carne",
+    "category": "almuerzo",
+    "portion": "1 unidad",
+    "calories": 260,
+    "protein_g": 12,
+    "carbs_g": 25,
+    "fat_g": 13
+  },
+  {
+    "name": "Asado (vacío)",
+    "category": "almuerzo",
+    "portion": "200g",
+    "calories": 520,
+    "protein_g": 45,
+    "carbs_g": 0,
+    "fat_g": 40
+  },
+  {
+    "name": "Chorizo",
+    "category": "almuerzo",
+    "portion": "1 unidad",
+    "calories": 320,
+    "protein_g": 14,
+    "carbs_g": 2,
+    "fat_g": 28
+  },
+  {
+    "name": "Fideos con tuco",
+    "category": "almuerzo",
+    "portion": "1 plato",
+    "calories": 600,
+    "protein_g": 18,
+    "carbs_g": 85,
+    "fat_g": 18
+  },
+  {
+    "name": "Ravioles con salsa",
+    "category": "almuerzo",
+    "portion": "1 plato",
+    "calories": 700,
+    "protein_g": 25,
+    "carbs_g": 90,
+    "fat_g": 22
+  },
+  {
+    "name": "Locro",
+    "category": "almuerzo",
+    "portion": "1 plato",
+    "calories": 650,
+    "protein_g": 28,
+    "carbs_g": 60,
+    "fat_g": 35
+  },
+  {
+    "name": "Lentejas guisadas",
+    "category": "almuerzo",
+    "portion": "1 plato",
+    "calories": 500,
+    "protein_g": 22,
+    "carbs_g": 65,
+    "fat_g": 15
+  },
+  {
+    "name": "Pizza muzzarella (2 porciones)",
+    "category": "almuerzo",
+    "portion": "2 porciones",
+    "calories": 600,
+    "protein_g": 24,
+    "carbs_g": 70,
+    "fat_g": 28
+  },
+  {
+    "name": "Tarta de jamón y queso",
+    "category": "cena",
+    "portion": "1 porción",
+    "calories": 400,
+    "protein_g": 18,
+    "carbs_g": 30,
+    "fat_g": 22
+  },
+  {
+    "name": "Tarta de verdura",
+    "category": "cena",
+    "portion": "1 porción",
+    "calories": 320,
+    "protein_g": 10,
+    "carbs_g": 35,
+    "fat_g": 15
+  },
+  {
+    "name": "Omelette de queso",
+    "category": "cena",
+    "portion": "2 huevos",
+    "calories": 250,
+    "protein_g": 18,
+    "carbs_g": 2,
+    "fat_g": 20
+  },
+  {
+    "name": "Hamburguesa casera",
+    "category": "cena",
+    "portion": "1 unidad",
+    "calories": 500,
+    "protein_g": 30,
+    "carbs_g": 35,
+    "fat_g": 25
+  },
+  {
+    "name": "Bife a la plancha",
+    "category": "cena",
+    "portion": "200g",
+    "calories": 450,
+    "protein_g": 45,
+    "carbs_g": 0,
+    "fat_g": 30
+  },
+  {
+    "name": "Flan con dulce de leche",
+    "category": "postre",
+    "portion": "1 porción",
+    "calories": 420,
+    "protein_g": 8,
+    "carbs_g": 55,
+    "fat_g": 18
+  },
+  {
+    "name": "Helado artesanal",
+    "category": "postre",
+    "portion": "1 bocha",
+    "calories": 180,
+    "protein_g": 3,
+    "carbs_g": 20,
+    "fat_g": 9
+  },
+  {
+    "name": "Alfajor simple",
+    "category": "postre",
+    "portion": "1 unidad",
+    "calories": 220,
+    "protein_g": 3,
+    "carbs_g": 28,
+    "fat_g": 11
+  }
+]

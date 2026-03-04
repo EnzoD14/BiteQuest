@@ -1,0 +1,16 @@
+{
+  "_id": "69a6e99bbcb37dfade175bbf",
+  "userId": "69a6e989bcb37dfade175bbc",
+  "age": 25,
+  "gender": "male",
+  "weight": 65,
+  "height": 174,
+  "dietaryRestriction": "none",
+  "goal": "gain_muscle",
+  "level": 1,
+  "points": 50,
+  "dailyCaloricTarget": 2403,
+  "createdAt": "2026-03-03T14:00:59.613Z",
+  "updatedAt": "2026-03-03T14:09:03.712Z",
+  "__v": 0
+}
