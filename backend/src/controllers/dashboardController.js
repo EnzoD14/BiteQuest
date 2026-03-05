@@ -1,8 +1,8 @@
 const Profile = require('../models/Profile');
 const FoodLog = require('../models/FoodLog');
-const { calculateLevel } = require('../services/nutritionEngine'); // Arch #8
+const { calculateLevel, calculateMacroTargets } = require('../services/nutritionEngine'); // Mejora #3
 
-// @desc    Obtener estado consolidado del Dashboard (Calorías, Nivel, Puntos actual)
+// @desc    Obtener estado consolidado del Dashboard
 // @route   GET /api/dashboard
 // @access  Private
 const getDashboardData = async (req, res) => {
@@ -20,7 +20,7 @@ const getDashboardData = async (req, res) => {
             date: { $gte: startOfToday }
         });
 
-        // Limpieza de datos corruptos/sin macros (por cambios de schema)
+        // Limpieza de datos corruptos/sin macros
         const invalidLogs = logs.filter(log => typeof log.protein === 'undefined' || log.protein === null);
         if (invalidLogs.length > 0) {
             await FoodLog.deleteMany({ _id: { $in: invalidLogs.map(l => l._id) } });
@@ -32,33 +32,55 @@ const getDashboardData = async (req, res) => {
         const carbsConsumed = logs.reduce((acc, log) => acc + (log.carbs || 0), 0);
         const fatsConsumed = logs.reduce((acc, log) => acc + (log.fats || 0), 0);
 
-        // Métrica calculada al vuelo
         const adherenceDeviation = caloriesConsumed - profile.dailyCaloricTarget;
 
-        // Targets de macros calculados según peso y objetivo del usuario
-        // Proteína: 1.6 g/kg para ganar músculo, 1.2 g/kg para mantener/bajar
-        const proteinMultiplier = profile.goal === 'gain_muscle' ? 1.6 : 1.2;
-        const proteinTarget = Math.round(profile.weight * proteinMultiplier);
-        // Carbos y grasas distribuidos del resto de calorías
-        const proteinCalories = proteinTarget * 4;
-        const remainingCalories = profile.dailyCaloricTarget - proteinCalories;
-        const carbsTarget = Math.round((remainingCalories * 0.55) / 4); // 55% restante en carbos
-        const fatsTarget = Math.round((remainingCalories * 0.45) / 9);  // 45% restante en grasas
+        // Mejora #3: lógica de macros centralizada
+        const { proteinTarget, carbsTarget, fatsTarget } = calculateMacroTargets(profile);
+
+        // Mejora #4: Calcular streak real (días consecutivos con al menos 1 registro)
+        let streak = 0;
+        const streakCheckDate = new Date();
+        streakCheckDate.setHours(0, 0, 0, 0);
+
+        // Si hoy ya tiene registros, el streak arranca en 1 y se verifica hacia atrás desde ayer
+        if (logs.length > 0) {
+            streak = 1;
+            for (let i = 1; i <= 365; i++) {
+                const dayStart = new Date(streakCheckDate);
+                dayStart.setDate(dayStart.getDate() - i);
+                dayStart.setHours(0, 0, 0, 0);
+                const dayEnd = new Date(dayStart);
+                dayEnd.setHours(23, 59, 59, 999);
+
+                const dayLogs = await FoodLog.countDocuments({
+                    userId: req.user.id,
+                    date: { $gte: dayStart, $lte: dayEnd }
+                });
+
+                if (dayLogs > 0) {
+                    streak++;
+                } else {
+                    break; // Cadena rota
+                }
+            }
+        }
+
+        // Mejora #12: Limitar recentLogs a los últimos 5 para no saturar el dashboard
+        const totalLogsToday = logs.length;
+        const recentLogs = logs.slice(-5);
 
         res.json({
             targetCalories: profile.dailyCaloricTarget,
             caloriesConsumed,
-            proteinConsumed,
-            carbsConsumed,
-            fatsConsumed,
+            proteinConsumed, carbsConsumed, fatsConsumed,
             adherenceDeviation,
-            proteinTarget,
-            carbsTarget,
-            fatsTarget,
-            level: calculateLevel(profile.points), // Arch #8: usa la función centralizada
+            proteinTarget, carbsTarget, fatsTarget,
+            level: calculateLevel(profile.points),
             points: profile.points,
             pointsToNextLevel: 500 - (profile.points % 500),
-            recentLogs: logs
+            streak,           // Mejora #4: racha real
+            totalLogsToday,   // Mejora #12: total del día para el "Ver todos"
+            recentLogs        // Solo últimos 5
         });
     } catch (error) {
         console.error(error);
@@ -66,8 +88,8 @@ const getDashboardData = async (req, res) => {
     }
 };
 
-// @desc    Obtener historial de los últimos 7 días agrupado por día
-// @route   GET /api/dashboard/weekly
+// @desc    Obtener historial de los últimos 7 días (o rango con from/to)
+// @route   GET /api/dashboard/weekly?from=YYYY-MM-DD&to=YYYY-MM-DD
 // @access  Private
 const getWeeklyData = async (req, res) => {
     try {
@@ -76,35 +98,47 @@ const getWeeklyData = async (req, res) => {
             return res.status(404).json({ message: 'Perfil incompleto' });
         }
 
-        // Armar rango: desde hace 6 días a las 00:00 hasta ahora
-        const startOf7DaysAgo = new Date();
-        startOf7DaysAgo.setDate(startOf7DaysAgo.getDate() - 6);
-        startOf7DaysAgo.setHours(0, 0, 0, 0);
+        // Mejora #7: Soporte de rango de fechas opcional via query params
+        let startDate, endDate;
+        if (req.query.from && req.query.to) {
+            startDate = new Date(req.query.from);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(req.query.to);
+            endDate.setHours(23, 59, 59, 999);
+        } else {
+            // Default: últimos 7 días
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - 6);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date();
+            endDate.setHours(23, 59, 59, 999);
+        }
 
         const logs = await FoodLog.find({
             userId: req.user.id,
-            date: { $gte: startOf7DaysAgo }
+            date: { $gte: startDate, $lte: endDate }
         });
 
-        // Inicializar los 7 días con ceros
+        // Construir mapa de días en el rango
         const daysMap = {};
         const DAYS_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-        for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
+        const diffDays = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (let i = 0; i <= diffDays; i++) {
+            const d = new Date(startDate);
+            d.setDate(d.getDate() + i);
             d.setHours(0, 0, 0, 0);
             const key = d.toISOString().split('T')[0];
+            const isToday = d.getTime() === today.getTime();
             daysMap[key] = {
                 date: key,
-                label: i === 0 ? 'Hoy' : DAYS_ES[d.getDay()],
-                calories: 0,
-                protein: 0,
-                carbs: 0,
-                fats: 0,
+                label: isToday ? 'Hoy' : DAYS_ES[d.getDay()],
+                calories: 0, protein: 0, carbs: 0, fats: 0,
             };
         }
 
-        // Acumular logs en el día correspondiente
         for (const log of logs) {
             const key = new Date(log.date).toISOString().split('T')[0];
             if (daysMap[key]) {
@@ -115,20 +149,13 @@ const getWeeklyData = async (req, res) => {
             }
         }
 
-        // Targets de macros (misma lógica que getDashboardData)
-        const proteinMultiplier = profile.goal === 'gain_muscle' ? 1.6 : 1.2;
-        const proteinTarget = Math.round(profile.weight * proteinMultiplier);
-        const proteinCalories = proteinTarget * 4;
-        const remainingCalories = profile.dailyCaloricTarget - proteinCalories;
-        const carbsTarget = Math.round((remainingCalories * 0.55) / 4);
-        const fatsTarget = Math.round((remainingCalories * 0.45) / 9);
+        // Mejora #3: macro targets centralizados
+        const { proteinTarget, carbsTarget, fatsTarget } = calculateMacroTargets(profile);
 
         res.json({
             days: Object.values(daysMap),
             targetCalories: profile.dailyCaloricTarget,
-            proteinTarget,
-            carbsTarget,
-            fatsTarget,
+            proteinTarget, carbsTarget, fatsTarget,
         });
     } catch (error) {
         console.error(error);
@@ -136,7 +163,5 @@ const getWeeklyData = async (req, res) => {
     }
 };
 
-module.exports = {
-    getDashboardData,
-    getWeeklyData
-};
+module.exports = { getDashboardData, getWeeklyData };
+

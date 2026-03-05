@@ -34,8 +34,21 @@ const calculateDailyTarget = (tmb, goal, activityLevel = 1.2) => {
 // Cada 500 puntos sube 1 nivel (Gamificación SDT)
 const calculateLevel = (points) => Math.floor(points / 500) + 1;
 
+// Mejora #3: Extracción de lógica de macros — anteriormente duplicada en getDashboardData y getWeeklyData
+const calculateMacroTargets = (profile) => {
+    const proteinMultiplier = profile.goal === 'gain_muscle' ? 1.6 : 1.2;
+    const proteinTarget = Math.round(profile.weight * proteinMultiplier);
+    const proteinCalories = proteinTarget * 4;
+    const remainingCalories = profile.dailyCaloricTarget - proteinCalories;
+    const carbsTarget = Math.round((remainingCalories * 0.55) / 4); // 55% restante en carbos
+    const fatsTarget = Math.round((remainingCalories * 0.45) / 9);  // 45% restante en grasas
+    return { proteinTarget, carbsTarget, fatsTarget };
+};
+
 module.exports = {
     calculateBasalMetabolicRate,
     calculateDailyTarget,
-    calculateLevel
+    calculateLevel,
+    calculateMacroTargets
 };
+
