@@ -1,6 +1,7 @@
 const Challenge = require('../models/Challenge');
 const UserChallenge = require('../models/UserChallenge');
 const Profile = require('../models/Profile');
+const { calculateLevel } = require('../services/nutritionEngine'); // Arch #8
 
 // @desc    Obtener retos o generarlos si no existen hoy (FBM - Prompts)
 // @route   GET /api/challenges/daily
@@ -27,15 +28,19 @@ const getDailyChallenges = async (req, res) => {
             const profile = await Profile.findOne({ userId: req.user.id });
             const currentLevel = profile ? profile.level : 1;
 
-            // Retos mock estáticos: Traer 3 recomendados al nivel del usuario
+            // Retos recomendados al nivel del usuario
             const challenges = await Challenge.find({ difficultyLevel: { $lte: currentLevel } }).limit(3);
 
+            // Arch #10: Usamos findOneAndUpdate con upsert para evitar race conditions
+            // Si dos peticiones llegan al mismo tiempo, sólo se crea un documento por reto
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
             for (const challenge of challenges) {
-                const uc = await UserChallenge.create({
-                    userId: req.user.id,
-                    challengeId: challenge._id,
-                });
-                userChallenges.push(uc);
+                await UserChallenge.findOneAndUpdate(
+                    { userId: req.user.id, challengeId: challenge._id, date: { $gte: today } },
+                    { $setOnInsert: { userId: req.user.id, challengeId: challenge._id } },
+                    { upsert: true, new: true }
+                );
             }
 
             // Repopulate para mandar al cliente
@@ -77,9 +82,8 @@ const completeChallenge = async (req, res) => {
         if (profile) {
             profile.points += userChallenge.challengeId.rewardPoints;
 
-            // Lógica simple de level up: Cada 500 puntos sube 1 nivel
-            const newLevel = Math.floor(profile.points / 500) + 1;
-            profile.level = newLevel;
+            // Arch #8: Lógica de nivel centralizada en nutritionEngine
+            profile.level = calculateLevel(profile.points);
 
             await profile.save();
         }

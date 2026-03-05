@@ -16,22 +16,28 @@ const generateToken = (id, anonymousId) => {
 // @access  Public
 const registerUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, name } = req.body; // Mejora #2: aceptar nombre
+
+        // Quick Win 18: Validar formato de email y longitud de contraseña antes de consultar DB
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ message: 'El formato del email es inválido' });
+        }
+        if (!password || password.length < 6) {
+            return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres' });
+        }
 
         const userExists = await User.findOne({ email });
         if (userExists) {
             return res.status(400).json({ message: 'El usuario ya existe' });
         }
 
-        // Hash dinámico de la contraseña
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(password, salt);
-
-        // ID Anónimo opaco para métricas experimentales
         const anonymousId = crypto.randomBytes(16).toString('hex');
 
         const user = await User.create({
             email,
+            name: name?.trim() || '',
             passwordHash,
             anonymousId
         });
@@ -40,6 +46,7 @@ const registerUser = async (req, res) => {
             res.status(201).json({
                 _id: user.id,
                 email: user.email,
+                name: user.name,
                 anonymousId: user.anonymousId,
                 token: generateToken(user._id, user.anonymousId),
             });
@@ -59,6 +66,11 @@ const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
 
+        // Quick Win 18: Valida presencia antes de buscar en DB
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email y contraseña son requeridos' });
+        }
+
         const user = await User.findOne({ email });
 
         if (user && (await bcrypt.compare(password, user.passwordHash))) {
@@ -68,6 +80,7 @@ const loginUser = async (req, res) => {
             res.json({
                 _id: user.id,
                 email: user.email,
+                name: user.name || '',
                 anonymousId: user.anonymousId,
                 hasProfile: !!profile,
                 token: generateToken(user._id, user.anonymousId),

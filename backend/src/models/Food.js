@@ -7,7 +7,7 @@ const foodSchema = new mongoose.Schema({
     protein: { type: Number, required: true, default: 0 },
     carbs: { type: Number, required: true, default: 0 },
     fats: { type: Number, required: true, default: 0 },
-    category: { type: String, required: true },
+    category: { type: String, required: true, index: true }, // Quick Win 23: índice para acelerar filtros
     allergens: [{ type: String }] // ej. 'gluten', 'meat', 'dairy'
 });
 

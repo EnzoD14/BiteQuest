@@ -30,7 +30,12 @@ const calculateDailyTarget = (tmb, goal, activityLevel = 1.2) => {
     }
 };
 
+// Arch #8: Lógica de nivel centralizada — evita duplicación en challengeController y dashboardController
+// Cada 500 puntos sube 1 nivel (Gamificación SDT)
+const calculateLevel = (points) => Math.floor(points / 500) + 1;
+
 module.exports = {
     calculateBasalMetabolicRate,
-    calculateDailyTarget
+    calculateDailyTarget,
+    calculateLevel
 };

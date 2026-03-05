@@ -10,14 +10,31 @@ const foodRoutes = require('./routes/foodRoutes');
 const challengeRoutes = require('./routes/challengeRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const telemetryRoutes = require('./routes/telemetryRoutes');
+const logRoutes = require('./routes/logRoutes');
 
 const app = express();
 
-// Middlewares
-app.use(express.json());
-app.use(cors());
+// Mejora #3: CORS restringido a orígenes del frontend
+const allowedOrigins = [
+    'http://localhost:8081',  // Expo Web dev
+    'http://localhost:19006', // Expo Web alternativo
+    'http://127.0.0.1:8081',
+];
+app.use(cors({
+    origin: (origin, callback) => {
+        // Permitir peticiones sin origin (ej. React Native Android/iOS nativo)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error(`CORS: origen no permitido → ${origin}`));
+        }
+    },
+    credentials: true
+}));
+
 app.use(helmet());
-app.use(morgan('dev')); // Logger para la defensa de métricas
+app.use(morgan('dev'));
+app.use(express.json());
 
 // Base Routes
 app.use('/api/auth', authRoutes);
@@ -26,6 +43,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api', foodRoutes);
 app.use('/api/challenges', challengeRoutes);
 app.use('/api/telemetry', telemetryRoutes);
+app.use('/api/logs', logRoutes);
 
 // Error Handler generico
 app.use((err, req, res, next) => {

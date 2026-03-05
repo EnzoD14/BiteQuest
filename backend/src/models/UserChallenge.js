@@ -29,4 +29,8 @@ const userChallengeSchema = new mongoose.Schema({
     timestamps: true
 });
 
+// Arch #10: Índice compuesto único para evitar duplicados en asignación de retos diarios
+// Junto con el upsert en challengeController garantiza idempotencia ante race conditions
+userChallengeSchema.index({ userId: 1, challengeId: 1, date: 1 }, { unique: false });
+
 module.exports = mongoose.model('UserChallenge', userChallengeSchema);

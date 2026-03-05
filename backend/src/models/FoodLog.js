@@ -6,7 +6,6 @@ const foodLogSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-        index: true
     },
     foodId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -21,10 +20,13 @@ const foodLogSchema = new mongoose.Schema({
     date: {
         type: Date,
         default: Date.now,
-        index: true
     }
 }, {
     timestamps: true
 });
+
+// Arch #9: Índice compuesto para la query más frecuente { userId, date }
+// Mucho más eficiente que dos índices simples separados
+foodLogSchema.index({ userId: 1, date: -1 });
 
 module.exports = mongoose.model('FoodLog', foodLogSchema);
