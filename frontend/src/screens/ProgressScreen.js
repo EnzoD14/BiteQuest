@@ -12,7 +12,8 @@ export default function ProgressScreen() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState(0);
     const [error, setError] = useState(false);
-    const [weekOffset, setWeekOffset] = useState(0); // Mejora #7: 0 = semana actual, 1 = semana anterior, etc.
+    const [weekOffset, setWeekOffset] = useState(0);
+    const [selectedDay, setSelectedDay] = useState(null);
 
     const fetchWeekly = async (offset = weekOffset) => {
         setError(false);
@@ -56,7 +57,7 @@ export default function ProgressScreen() {
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: theme.colors.background }}>
                 <Ionicons name="cloud-offline-outline" size={48} color={theme.colors.textLight} />
                 <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.colors.text, marginTop: 16, marginBottom: 8 }}>Error al cargar progreso</Text>
-                <Text style={{ fontSize: 14, color: theme.colors.textLight, textAlign: 'center', marginBottom: 24 }}>No se pudo conectar al servidor. Verific\u00e1 tu conexi\u00f3n.</Text>
+                <Text style={{ fontSize: 14, color: theme.colors.textLight, textAlign: 'center', marginBottom: 24 }}>No se pudo conectar al servidor. Verificá tu conexión.</Text>
                 <TouchableOpacity
                     style={{ backgroundColor: theme.colors.primary, paddingVertical: 12, paddingHorizontal: 28, borderRadius: theme.borderRadius.md }}
                     onPress={() => { setLoading(true); fetchWeekly(); }}
@@ -187,13 +188,18 @@ export default function ProgressScreen() {
                             const barHeight = maxBarValue > 0 ? Math.max((value / maxBarValue) * BAR_MAX_HEIGHT, value > 0 ? 4 : 0) : 0;
                             const isOverTarget = value > max;
                             return (
-                                <View key={day.date} style={styles.barColumn}>
+                                <TouchableOpacity
+                                    key={day.date}
+                                    style={[styles.barColumn, selectedDay?.date === day.date && { backgroundColor: 'rgba(0,0,0,0.04)', borderRadius: 8 }]}
+                                    activeOpacity={0.7}
+                                    onPress={() => setSelectedDay(selectedDay?.date === day.date ? null : day)}
+                                >
                                     <Text style={styles.barValue}>{value > 0 ? Math.round(value) : ''}</Text>
                                     <View style={[styles.barBackground, { height: BAR_MAX_HEIGHT }]}>
                                         <View style={[styles.barFill, { height: barHeight, backgroundColor: isOverTarget ? theme.colors.error || '#E57373' : theme.colors.primary }]} />
                                     </View>
                                     <Text style={styles.barLabel}>{day.label}</Text>
-                                </View>
+                                </TouchableOpacity>
                             );
                         })}
                     </View>
@@ -204,6 +210,21 @@ export default function ProgressScreen() {
                         <View style={[styles.legendDot, { backgroundColor: theme.colors.error || '#E57373', marginLeft: 12 }]} />
                         <Text style={styles.legendText}>Supera meta</Text>
                     </View>
+
+                    {/* Mejora v5 #9: Tooltip de día seleccionado */}
+                    {selectedDay && (
+                        <View style={{ backgroundColor: theme.colors.secondary, padding: 12, borderRadius: 10, marginTop: 8 }}>
+                            <Text style={{ fontWeight: 'bold', color: theme.colors.text, marginBottom: 4 }}>
+                                {selectedDay.label} — {selectedDay.date}
+                            </Text>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                <Text style={{ fontSize: 12, color: theme.colors.textLight }}>🔥 {Math.round(selectedDay.calories)} kcal</Text>
+                                <Text style={{ fontSize: 12, color: theme.colors.textLight }}>🥩 P: {Math.round(selectedDay.protein)}g</Text>
+                                <Text style={{ fontSize: 12, color: theme.colors.textLight }}>🍞 C: {Math.round(selectedDay.carbs)}g</Text>
+                                <Text style={{ fontSize: 12, color: theme.colors.textLight }}>🧈 G: {Math.round(selectedDay.fats)}g</Text>
+                            </View>
+                        </View>
+                    )}
                 </View>
 
                 {/* Desglose Diario — datos reales */}

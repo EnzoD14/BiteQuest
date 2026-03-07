@@ -17,6 +17,7 @@ import LogFoodScreen from '../screens/LogFoodScreen';
 import ChallengesScreen from '../screens/ChallengesScreen';
 import ProgressScreen from '../screens/ProgressScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import FoodHistoryScreen from '../screens/FoodHistoryScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -90,6 +91,7 @@ const MainStackComp = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="MainTabs" component={MainTabs} />
         <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+        <Stack.Screen name="FoodHistory" component={FoodHistoryScreen} />
     </Stack.Navigator>
 );
 

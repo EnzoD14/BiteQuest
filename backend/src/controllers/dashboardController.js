@@ -37,30 +37,32 @@ const getDashboardData = async (req, res) => {
         // Mejora #3: lógica de macros centralizada
         const { proteinTarget, carbsTarget, fatsTarget } = calculateMacroTargets(profile);
 
-        // Mejora #4: Calcular streak real (días consecutivos con al menos 1 registro)
+        // Mejora v5 #3: Streak optimizado con aggregation pipeline (reemplaza N+1 queries)
         let streak = 0;
-        const streakCheckDate = new Date();
-        streakCheckDate.setHours(0, 0, 0, 0);
-
-        // Si hoy ya tiene registros, el streak arranca en 1 y se verifica hacia atrás desde ayer
         if (logs.length > 0) {
-            streak = 1;
-            for (let i = 1; i <= 365; i++) {
-                const dayStart = new Date(streakCheckDate);
-                dayStart.setDate(dayStart.getDate() - i);
-                dayStart.setHours(0, 0, 0, 0);
-                const dayEnd = new Date(dayStart);
-                dayEnd.setHours(23, 59, 59, 999);
+            const streakResult = await FoodLog.aggregate([
+                { $match: { userId: profile.userId } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: '%Y-%m-%d', date: '$date' } }
+                    }
+                },
+                { $sort: { _id: -1 } },
+                { $limit: 366 }
+            ]);
 
-                const dayLogs = await FoodLog.countDocuments({
-                    userId: req.user.id,
-                    date: { $gte: dayStart, $lte: dayEnd }
-                });
+            const loggedDates = new Set(streakResult.map(r => r._id));
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
-                if (dayLogs > 0) {
+            for (let i = 0; i <= 365; i++) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                const key = d.toISOString().split('T')[0];
+                if (loggedDates.has(key)) {
                     streak++;
                 } else {
-                    break; // Cadena rota
+                    break;
                 }
             }
         }

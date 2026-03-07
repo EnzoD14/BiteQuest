@@ -34,17 +34,22 @@ const getRecommendedFoods = async (req, res) => {
 // @access  Private
 const logFoodConsumption = async (req, res) => {
     try {
-        const { foodId, name, calories, protein, carbs, fats } = req.body;
+        const { foodId, name, calories, protein, carbs, fats, category } = req.body;
 
-        // Este evento es crucial para la métrica "Adherencia Nutricional" y "Frecuencia de Uso"
+        // Mejora v5 #7: Auto-detectar mealType desde categoría
+        const CATEGORY_TO_MEAL = {
+            desayuno: 'breakfast', almuerzo: 'lunch', merienda: 'snack',
+            cena: 'dinner', postre: 'snack', suplemento: 'other', frutas: 'snack'
+        };
+        const mealType = CATEGORY_TO_MEAL[(category || '').toLowerCase()] || 'other';
+
         const log = await FoodLog.create({
             userId: req.user.id,
-            foodId,
-            name,
-            calories,
+            foodId, name, calories,
             protein: protein || 0,
             carbs: carbs || 0,
-            fats: fats || 0
+            fats: fats || 0,
+            mealType
         });
 
         res.status(201).json(log);
@@ -74,8 +79,37 @@ const getTodayLogs = async (req, res) => {
     }
 };
 
+// @desc    Obtener todos los logs del usuario (historial)
+// @route   GET /api/logs
+// @access  Private
+const getAllLogs = async (req, res) => {
+    try {
+        const logs = await FoodLog.find({ userId: req.user.id }).sort({ date: -1 });
+        res.json(logs);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error obteniendo historial' });
+    }
+};
+
+// @desc    Eliminar un log de comida
+// @route   DELETE /api/logs/:id
+// @access  Private
+const deleteLog = async (req, res) => {
+    try {
+        const log = await FoodLog.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
+        if (!log) return res.status(404).json({ message: 'Registro no encontrado' });
+        res.json({ message: 'Registro eliminado' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error eliminando registro' });
+    }
+};
+
 module.exports = {
     getRecommendedFoods,
     logFoodConsumption,
-    getTodayLogs
+    getTodayLogs,
+    getAllLogs,
+    deleteLog
 };

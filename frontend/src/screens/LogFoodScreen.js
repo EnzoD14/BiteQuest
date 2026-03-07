@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import {
-    View, Text, StyleSheet, SectionList, FlatList, TouchableOpacity, Alert, ActivityIndicator,
+    View, Text, StyleSheet, SectionList, FlatList, TouchableOpacity, ActivityIndicator,
     SafeAreaView, Animated, TextInput
 } from 'react-native';
+import { showAlert } from '../utils/alerts';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../api/client';
 import { AuthContext } from '../context/AuthContext';
@@ -82,14 +83,15 @@ export default function LogFoodScreen({ navigation }) {
                 calories: adjustedCalories,
                 protein: adjustedProtein,
                 carbs: adjustedCarbs,
-                fats: adjustedFats
+                fats: adjustedFats,
+                category: food.category // Mejora v5 #7: envia categoría para auto-asignar mealType
             });
 
             const duration = Date.now() - startTime;
             recordTelemetry('FOOD_LOG', duration, { calories: adjustedCalories });
             showToast(`✓ ${food.name} · ${adjustedCalories} kcal añadidas`);
         } catch (error) {
-            Alert.alert('Error', 'Hubo un error al registrar el alimento');
+            showAlert('Error', 'Hubo un error al registrar el alimento');
         } finally {
             setLoggingId(null);
         }

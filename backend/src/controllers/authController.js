@@ -94,7 +94,34 @@ const loginUser = async (req, res) => {
     }
 };
 
+// @desc    Eliminar cuenta y todos los datos del usuario (Ley 25.326 - Derecho al olvido)
+// @route   DELETE /api/auth/account
+// @access  Private
+const deleteAccount = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const FoodLog = require('../models/FoodLog');
+        const UserChallenge = require('../models/UserChallenge');
+        const ExperimentTelemetry = require('../models/ExperimentTelemetry');
+
+        // Eliminar todos los datos asociados al usuario
+        await Promise.all([
+            Profile.deleteMany({ userId }),
+            FoodLog.deleteMany({ userId }),
+            UserChallenge.deleteMany({ userId }),
+            ExperimentTelemetry.deleteMany({ userId }),
+            User.findByIdAndDelete(userId),
+        ]);
+
+        res.json({ message: 'Cuenta eliminada exitosamente' });
+    } catch (error) {
+        console.error('Error eliminando cuenta:', error);
+        res.status(500).json({ message: 'Error del servidor al eliminar la cuenta' });
+    }
+};
+
 module.exports = {
     registerUser,
-    loginUser
+    loginUser,
+    deleteAccount
 };

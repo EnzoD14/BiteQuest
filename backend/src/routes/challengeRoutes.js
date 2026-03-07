@@ -4,6 +4,6 @@ const { getDailyChallenges, completeChallenge } = require('../controllers/challe
 const { protect } = require('../middlewares/auth');
 
 router.get('/daily', protect, getDailyChallenges);
-router.post('/:id/complete', protect, completeChallenge);
+router.patch('/:id/complete', protect, completeChallenge); // Mejora #8: PATCH en lugar de POST
 
 module.exports = router;

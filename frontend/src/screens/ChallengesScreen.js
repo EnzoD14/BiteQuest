@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, RefreshControl, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useContext, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, RefreshControl, SafeAreaView, Animated, Platform } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../api/client';
@@ -12,6 +12,8 @@ export default function ChallengesScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const toastAnim = useRef(new Animated.Value(0)).current;
 
     const fetchChallenges = async () => {
         setError(false);
@@ -41,18 +43,41 @@ export default function ChallengesScreen() {
     const handleComplete = async (userChallenge) => {
         if (userChallenge.isCompleted) return;
 
-        try {
-            await apiClient.post(`/challenges/${userChallenge._id}/complete`);
+        const title = userChallenge.challengeId?.title || 'Reto';
+        const pts = userChallenge.challengeId?.rewardPoints || 0;
 
-            // Métrica pasiva (Frecuencia y Tasa de Retos)
-            recordTelemetry('CHALLENGE_COMPLETE', 0, { challengeTitle: userChallenge.challengeId?.title || 'Unknown' });
+        const doComplete = async () => {
+            try {
+                await apiClient.patch(`/challenges/${userChallenge._id}/complete`);
+                recordTelemetry('CHALLENGE_COMPLETE', 0, { challengeTitle: title });
 
-            Alert.alert('¡Excelente!', `Ganaste ${userChallenge.challengeId?.rewardPoints || 0} puntos.`);
-            fetchChallenges(); // Recargar para ver efecto visual
-        } catch (error) {
-            Alert.alert('Error', 'No se pudo completar el reto');
+                // Toast animado de celebración
+                setToastMessage(`🎉 ¡+${pts} XP! Reto completado`);
+                Animated.sequence([
+                    Animated.timing(toastAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+                    Animated.delay(2200),
+                    Animated.timing(toastAnim, { toValue: 0, duration: 300, useNativeDriver: true })
+                ]).start(() => setToastMessage(''));
+                fetchChallenges();
+            } catch (error) {
+                Alert.alert('Error', 'No se pudo completar el reto');
+            }
+        };
+
+        // En web, Alert.alert con botones no funciona — usamos confirm()
+        if (Platform.OS === 'web') {
+            if (window.confirm(`¿Completaste "${title}"?\n+${pts} XP`)) {
+                doComplete();
+            }
+        } else {
+            Alert.alert('¿Completaste este reto?', `${title}\n+${pts} XP`, [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: '¡Sí, lo hice!', onPress: doComplete }
+            ]);
         }
     };
+
+
 
     if (loading) return <ActivityIndicator size="large" color={theme.colors.primary} style={styles.center} />;
 
@@ -78,6 +103,16 @@ export default function ChallengesScreen() {
 
     return (
         <SafeAreaView style={styles.safeArea}>
+            {/* Mejora #5: Toast de celebración */}
+            {toastMessage !== '' && (
+                <Animated.View style={[styles.toast, {
+                    opacity: toastAnim,
+                    transform: [{ translateY: toastAnim.interpolate({ inputRange: [0, 1], outputRange: [-20, 0] }) }]
+                }]}>
+                    <Text style={styles.toastText}>{toastMessage}</Text>
+                </Animated.View>
+            )}
+
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Tus Logros</Text>
                 {totalCount > 0 && (
@@ -91,7 +126,7 @@ export default function ChallengesScreen() {
                 <Text style={styles.title}>Retos Activos</Text>
                 <Text style={styles.subtitle}>
                     {completedCount === totalCount && totalCount > 0
-                        ? '\u00a1Completaste todos los retos de hoy! \ud83c\udfc6'
+                        ? '¡Completaste todos los retos de hoy! 🏆'
                         : `${totalCount - completedCount} reto${totalCount - completedCount !== 1 ? 's' : ''} pendiente${totalCount - completedCount !== 1 ? 's' : ''} hoy.`
                     }
                 </Text>
@@ -179,4 +214,13 @@ const styles = StyleSheet.create({
     emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 64 },
     emptyTitle: { fontSize: 17, fontWeight: 'bold', color: theme.colors.text, marginTop: 16, marginBottom: 8 },
     emptyText: { fontSize: 14, color: theme.colors.textLight, textAlign: 'center' },
+
+    // Mejora #5: Toast animado
+    toast: {
+        position: 'absolute', top: 10, left: 20, right: 20, zIndex: 100,
+        backgroundColor: theme.colors.primary, borderRadius: 12,
+        paddingVertical: 14, paddingHorizontal: 20, alignItems: 'center',
+        shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 5
+    },
+    toastText: { color: '#fff', fontWeight: 'bold', fontSize: 15 }
 });

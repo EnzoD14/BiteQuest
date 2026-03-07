@@ -1,8 +1,9 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, SafeAreaView, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { theme } from '../theme';
 import { Ionicons } from '@expo/vector-icons';
+import { showAlert } from '../utils/alerts';
 
 export default function RegisterScreen({ navigation }) {
     const { register } = useContext(AuthContext);
@@ -18,27 +19,24 @@ export default function RegisterScreen({ navigation }) {
 
     const handleRegister = async () => {
         if (!email || !password || !confirmPassword) {
-            Alert.alert('Error', 'Por favor completa todos los campos');
+            showAlert('Error', 'Por favor completa todos los campos');
             return;
         }
         if (password !== confirmPassword) {
-            Alert.alert('Error', 'Las contraseñas no coinciden');
+            showAlert('Error', 'Las contraseñas no coinciden');
             return;
         }
         if (!disclaimerAccepted) {
             setDisclaimerError(true);
-            Alert.alert(
-                'Aviso requerido',
-                'Debés aceptar el aviso legal antes de crear tu cuenta.'
-            );
+            showAlert('Aviso requerido', 'Debés aceptar el aviso legal antes de crear tu cuenta.');
             return;
         }
         setDisclaimerError(false);
         setLoading(true);
         try {
-            await register(email, password, name.trim()); // Mejora #2: enviar nombre
+            await register(email, password, name.trim());
         } catch (error) {
-            Alert.alert('Error', error.response?.data?.message || 'Error al registrar usuario');
+            showAlert('Error', error.response?.data?.message || 'Error al registrar usuario');
         } finally {
             setLoading(false);
         }

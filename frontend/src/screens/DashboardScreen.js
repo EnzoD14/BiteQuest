@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, SafeAreaView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, SafeAreaView } from 'react-native';
+import { confirmDestructive, showAlert } from '../utils/alerts';
 import { useFocusEffect } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import apiClient from '../api/client';
@@ -89,6 +90,18 @@ export default function DashboardScreen({ navigation }) {
         fetchDashboard();
     };
 
+    // Mejora #1: Eliminar comida registrada
+    const handleDeleteMeal = (logId, name) => {
+        confirmDestructive('Eliminar registro', `¿Querés eliminar "${name}" de tus comidas de hoy?`, async () => {
+            try {
+                await apiClient.delete(`/logs/${logId}`);
+                fetchDashboard();
+            } catch (e) {
+                showAlert('Error', 'No se pudo eliminar el registro');
+            }
+        });
+    };
+
     if (loading) {
         return (
             <View style={styles.center}>
@@ -103,7 +116,7 @@ export default function DashboardScreen({ navigation }) {
             <View style={styles.center}>
                 <Ionicons name="wifi-outline" size={48} color={theme.colors.textLight} />
                 <Text style={styles.errorTitle}>Error al cargar datos</Text>
-                <Text style={styles.errorText}>Verific\u00e1 tu conexi\u00f3n a internet o que el servidor est\u00e9 encendido.</Text>
+                <Text style={styles.errorText}>Verificá tu conexión a internet o que el servidor esté encendido.</Text>
                 <TouchableOpacity style={styles.retryButton} onPress={() => { setLoading(true); fetchDashboard(); }}>
                     <Text style={styles.retryButtonText}>Reintentar</Text>
                 </TouchableOpacity>
@@ -283,28 +296,67 @@ export default function DashboardScreen({ navigation }) {
                     );
                 })()}
 
+                {/* Mejora v5 #6: Resumen calórico consolidado */}
+                {hasMeals && (() => {
+                    const consumed = data?.caloriesConsumed || 0;
+                    const target = data?.targetCalories || 2000;
+                    const pct = Math.min(Math.round((consumed / target) * 100), 150);
+                    const barWidth = Math.min(pct, 100);
+                    const color = pct > 110 ? theme.colors.error : pct >= 80 ? theme.colors.primary : '#FF9800';
+                    return (
+                        <View style={[styles.recommendationCard, { borderLeftColor: color, borderLeftWidth: 4, marginBottom: 12 }]}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: theme.colors.text }}>Progreso del día</Text>
+                                <Text style={{ fontSize: 14, fontWeight: 'bold', color }}>{pct}%</Text>
+                            </View>
+                            <View style={{ height: 6, backgroundColor: theme.colors.border, borderRadius: 3 }}>
+                                <View style={{ height: 6, backgroundColor: color, borderRadius: 3, width: `${barWidth}%` }} />
+                            </View>
+                            <Text style={{ fontSize: 12, color: theme.colors.textLight, marginTop: 6 }}>
+                                {consumed} de {target} kcal consumidas
+                            </Text>
+                        </View>
+                    );
+                })()}
+
                 {/* Comidas de hoy panel */}
                 <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Comidas de hoy</Text>
                     {data?.totalLogsToday > 5 && (
-                        <TouchableOpacity onPress={() => navigation.navigate('LogFood')}>
+                        <TouchableOpacity onPress={() => navigation.navigate('FoodHistory')}>
                             <Text style={styles.seeMore}>Ver todas ({data.totalLogsToday}) →</Text>
                         </TouchableOpacity>
                     )}
                 </View>
                 {hasMeals ? (
-                    data.recentLogs.map((meal, index) => (
-                        <View key={index} style={styles.mealItemCard}>
-                            <View style={styles.mealItemLeft}>
-                                <Ionicons name="restaurant-outline" size={20} color={theme.colors.primary} />
-                                <View style={styles.mealItemInfo}>
-                                    <Text style={styles.mealItemName}>{meal.name}</Text>
-                                    <Text style={styles.mealItemMacros}>P: {meal.protein}g • C: {meal.carbs}g • G: {meal.fats}g</Text>
+                    data.recentLogs.map((meal, index) => {
+                        // Mejora v5 #8: Iconos por tipo de comida
+                        const MEAL_ICONS = {
+                            breakfast: { name: 'sunny-outline', color: '#FF9800' },
+                            lunch: { name: 'restaurant-outline', color: theme.colors.primary },
+                            snack: { name: 'cafe-outline', color: '#9C27B0' },
+                            dinner: { name: 'moon-outline', color: '#607D8B' },
+                            other: { name: 'nutrition-outline', color: '#4CAF50' }
+                        };
+                        const mealIcon = MEAL_ICONS[meal.mealType] || MEAL_ICONS.other;
+                        return (
+                            <View key={index} style={styles.mealItemCard}>
+                                <View style={styles.mealItemLeft}>
+                                    <Ionicons name={mealIcon.name} size={20} color={mealIcon.color} />
+                                    <View style={styles.mealItemInfo}>
+                                        <Text style={styles.mealItemName}>{meal.name}</Text>
+                                        <Text style={styles.mealItemMacros}>P: {meal.protein}g • C: {meal.carbs}g • G: {meal.fats}g</Text>
+                                    </View>
+                                </View>
+                                <View style={styles.mealItemRight}>
+                                    <Text style={styles.mealItemCals}>{meal.calories} kcal</Text>
+                                    <TouchableOpacity onPress={() => handleDeleteMeal(meal._id, meal.name)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                        <Ionicons name="trash-outline" size={16} color={theme.colors.textLight} />
+                                    </TouchableOpacity>
                                 </View>
                             </View>
-                            <Text style={styles.mealItemCals}>{meal.calories} kcal</Text>
-                        </View>
-                    ))
+                        );
+                    })
                 ) : (
                     <View style={styles.mealsCard}>
                         <Text style={styles.mealsEmptyText}>Aun no has registrado ninguna comida hoy.</Text>
@@ -423,5 +475,6 @@ const styles = StyleSheet.create({
     mealItemInfo: { marginLeft: 12 },
     mealItemName: { fontSize: 15, fontWeight: 'bold', color: theme.colors.text, marginBottom: 4 },
     mealItemMacros: { fontSize: 12, color: theme.colors.textLight },
+    mealItemRight: { alignItems: 'flex-end', gap: 4 },
     mealItemCals: { fontSize: 15, fontWeight: 'bold', color: theme.colors.primary }
 });

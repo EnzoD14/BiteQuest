@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform, Switch, ActivityIndicator } from 'react-native';
+import { confirmDestructive, showAlert } from '../utils/alerts';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { theme } from '../theme';
@@ -229,10 +230,49 @@ export default function SettingsScreen() {
                     <Text style={styles.logoutButtonText}>Cerrar sesion</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.deleteAccountButton}>
+                <TouchableOpacity style={styles.deleteAccountButton} onPress={() => {
+                    confirmDestructive(
+                        'Eliminar cuenta',
+                        '¿Estás seguro? Se eliminarán todos tus datos de forma permanente.',
+                        () => {
+                            confirmDestructive(
+                                'Última confirmación',
+                                'Esta acción no se puede deshacer. ¿Eliminar tu cuenta y todos los datos?',
+                                async () => {
+                                    try {
+                                        await apiClient.delete('/auth/account');
+                                        await logout();
+                                    } catch (e) {
+                                        showAlert('Error', 'No se pudo eliminar la cuenta');
+                                    }
+                                }
+                            );
+                        }
+                    );
+                }}>
                     <Ionicons name="warning-outline" size={18} color={theme.colors.error} style={{ marginRight: 8 }} />
                     <Text style={styles.deleteAccountText}>Eliminar cuenta</Text>
                 </TouchableOpacity>
+
+                {/* Mejora #12: Sección Acerca de */}
+                <View style={[styles.card, { marginTop: 8 }]}>
+                    <View style={styles.cardHeader}>
+                        <Ionicons name="information-circle-outline" size={20} color={theme.colors.text} />
+                        <Text style={styles.cardTitle}>Acerca de BiteQuest</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Versión</Text>
+                        <Text style={styles.infoValue}>1.0.0</Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Text style={styles.infoLabel}>Plataforma</Text>
+                        <Text style={styles.infoValue}>React Native + Expo</Text>
+                    </View>
+                    <View style={styles.divider} />
+                    <Text style={{ fontSize: 12, color: theme.colors.textLight, lineHeight: 18, textAlign: 'center' }}>
+                        BiteQuest es un asistente nutricional gamificado con fines educativos. No reemplaza el asesoramiento de un profesional de la salud.
+                    </Text>
+                </View>
 
             </ScrollView>
         </SafeAreaView>

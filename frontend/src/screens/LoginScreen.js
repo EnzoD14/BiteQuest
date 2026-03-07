@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { showAlert } from '../utils/alerts';
 import { AuthContext } from '../context/AuthContext';
 import { theme } from '../theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +16,7 @@ export default function LoginScreen({ navigation }) {
         const mail = e || email;
         const pass = p || password;
         if (!mail || !pass) {
-            Alert.alert('Error', 'Por favor completa todos los campos');
+            showAlert('Error', 'Por favor completa todos los campos');
             return;
         }
 
@@ -23,7 +24,7 @@ export default function LoginScreen({ navigation }) {
         try {
             await login(mail, pass);
         } catch (error) {
-            Alert.alert('Error', error.response?.data?.message || 'Error al iniciar sesión');
+            showAlert('Error', error.response?.data?.message || 'Error al iniciar sesión');
         } finally {
             setLoading(false);
         }

@@ -17,6 +17,12 @@ const foodLogSchema = new mongoose.Schema({
     protein: { type: Number, required: true, default: 0 },
     carbs: { type: Number, required: true, default: 0 },
     fats: { type: Number, required: true, default: 0 },
+    // Mejora #9: Tipo de comida (opcional)
+    mealType: {
+        type: String,
+        enum: ['breakfast', 'lunch', 'snack', 'dinner', 'other'],
+        default: 'other'
+    },
     date: {
         type: Date,
         default: Date.now,
