@@ -1,5 +1,7 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { showAlert } from '../utils/alerts';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -81,15 +83,17 @@ export default function ProfileSetupScreen() {
             });
 
             // Actualizar contexto forzando render de MainTabs si era onboarding
-            setUser(prev => ({ ...prev, hasProfile: true }));
+            const updatedUser = { ...user, hasProfile: true };
+            await AsyncStorage.setItem('@BiteQuest_User', JSON.stringify(updatedUser));
+            setUser(updatedUser);
 
             if (isEditing) {
-                Alert.alert('Éxito', 'Perfil actualizado correctamente.');
-                navigation.goBack(); // Vuelve a settings
+                showAlert('Éxito', 'Perfil actualizado correctamente.');
+                navigation.goBack();
             }
 
         } catch (error) {
-            Alert.alert('Error', error.response?.data?.message || 'Error guardando tu perfil.');
+            showAlert('Error', error.response?.data?.message || 'Error guardando tu perfil.');
         } finally {
             setLoading(false);
         }
